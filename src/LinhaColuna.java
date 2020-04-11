@@ -30,6 +30,7 @@ public class LinhaColuna {
     
     public void incrementeLinha(int linha) {
     	this.linha+=linha;
+    	this.coluna = 0;
     }
    
 }

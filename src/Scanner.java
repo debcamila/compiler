@@ -15,19 +15,16 @@ public class Scanner {
 	}
 
 	public Token scan() throws IOException, ScannerException {
-
+		lc.incrementeColuna(1);
 		while (Character.isWhitespace((char) lookAhead)) {
 
 			lookAhead = bufferR.read();
 			if ((char) lookAhead == '\n') { // fim de coluna
-				//lc.setLinha(1);
-				lc.setColuna(-1);
 				lc.incrementeLinha(1);
+				lc.setColuna(0);
 			} else if ((char) lookAhead == '\t') { // TAB
-				//lc.setColuna(4);
 				lc.incrementeColuna(4);
 			} else {
-				//lc.setColuna(1);
 				lc.incrementeColuna(1);
 			}
 		}
@@ -35,21 +32,22 @@ public class Scanner {
 		//OPERADORES RELACIONAIS
 		if ((char) lookAhead == '<') {
 			lookAhead = bufferR.read();
-			//lc.incrementeColuna(1);
+			lc.incrementeColuna(1);
 			if ((char) lookAhead == '=') {
 				token = new Token(TipoToken.OP_RELACIONAL_MENOR_IGUAL, "<=", lc);
 				lookAhead = bufferR.read();
 				return token;
 			} else {
 				token = new Token(TipoToken.OP_RELACIONAL_MENOR, "<",lc);
-				//lookAhead = bufferR.read();
 				return token;
 			}
 		} else if ((char) lookAhead == '>') {
 			lookAhead = bufferR.read();
+			lc.incrementeColuna(1);
 			if ((char) lookAhead == '=') {
 				token = new Token(TipoToken.OP_RELACIONAL_MAIOR_IGUAL, ">=",lc);
 				lookAhead = bufferR.read();
+				lc.incrementeColuna(1);
 				return token;
 			} else {
 				token = new Token(TipoToken.OP_RELACIONAL_MAIOR, ">",lc);
@@ -58,12 +56,13 @@ public class Scanner {
 			}
 		} else if ((char) lookAhead == '!') {
 			lookAhead = bufferR.read();
+			lc.incrementeColuna(1);
 			if ((char) lookAhead == '=') {
 				token = new Token(TipoToken.OP_RELACIONAL_DIFERENTE, "!=", lc);
 				lookAhead = bufferR.read();
 				return token;
 			} else {
-				//throw new ScannerException("ERRO. Exclamação sozinha. Esperava um '='). Encontrou um: " +(char)lookAhead);
+				throw new ScannerException("ERRO. Exclamação sozinha. Esperava um '='. Encontrou um: " +(char)lookAhead, lc);
 			}
 			
 		//OPERADORES ARITMÉTICOS
@@ -120,58 +119,138 @@ public class Scanner {
 		// CHAR
 		}else if((char) lookAhead == '\'') {
 			lookAhead = bufferR.read();
-			String c = ""+(char)lookAhead;
-			lookAhead = bufferR.read();
-			if((char)lookAhead == '\'') {
-				token = new Token(TipoToken.VALOR_CHAR, c, lc);
+			char c = (char)lookAhead;
+			if(Character.isDigit(c) || Character.isLetter(c)) {
 				lookAhead = bufferR.read();
-				return token;
+				if((char)lookAhead == '\'') {
+					token = new Token(TipoToken.VALOR_CHAR, "" +c, lc);
+					lookAhead = bufferR.read();
+					return token;
+				}else {
+					throw new ScannerException("ERRO. Char mal formado. Esperava um fecha aspas. Encontrou um: " +(char)lookAhead, lc);
+				}
 			}else {
-				//throw new ScannerException("ERRO. Char mal formado. Esperava um fecha aspas. Encontrou um: " +(char)lookAhead);
+				throw new ScannerException("ERRO. Char mal formado. Esperava um digito ou uma letra. Encontrou um: " +(char)lookAhead, lc);
 			}
 			
+		//IDENTIFICADOR E PALAVRA RESERVADA
+		}else if(Character.isLetter((char)lookAhead) || (char)lookAhead == '_')   {
+			String result = "" + (char)lookAhead;
+			lookAhead = bufferR.read();
+			while(Character.isLetter((char)lookAhead) || (char)lookAhead == '_' || Character.isDigit((char)lookAhead))  {
+				result+=(char)lookAhead;
+				lookAhead = bufferR.read();
+			}
+			
+			// main  |  if  |  else  |  while  |  do  |  for  |  int  |  float  |  char
+			if(result.equals("main")) {
+				return token = new Token(TipoToken.PALAVRA_RESERVADA_MAIN, "main", lc);
+			}else if(result.equals("if")) {
+				return token = new Token(TipoToken.PALAVRA_RESERVADA_IF, "if", lc);
+			}else if(result.equals("else")) {
+				return token = new Token(TipoToken.PALAVRA_RESERVADA_ELSE, "else", lc);
+			}else if(result.equals("while")) {
+				return token = new Token(TipoToken.PALAVRA_RESERVADA_WHILE, "while", lc);
+			}else if(result.equals("do")) {
+				return token = new Token(TipoToken.PALAVRA_RESERVADA_DO, "do", lc);
+			}else if(result.equals("for")) {
+				return token = new Token(TipoToken.PALAVRA_RESERVADA_FOR, "for", lc);
+			}else if(result.equals("int")) {
+				return token = new Token(TipoToken.PALAVRA_RESERVADA_INT, "int", lc);
+			}else if(result.equals("float")) {
+				return token = new Token(TipoToken.PALAVRA_RESERVADA_FLOAT, "float", lc);
+			}else if(result.equals("char")) {
+				return token = new Token(TipoToken.PALAVRA_RESERVADA_CHAR, "char", lc);
+			}else {
+				return token = new Token(TipoToken.IDENTIFICADOR, result, lc);
+			}
+			
+		// DIGITO
+		}else if((char)lookAhead == '.') { //float
+			String result = ""+(char)lookAhead;
+			lookAhead = bufferR.read();
+			while(Character.isDigit((char)lookAhead)) {
+				result+=(char)lookAhead;
+				lookAhead = bufferR.read();
+			}
+			if(result.equals(".")) {
+				throw new ScannerException("ERRO. Float mal formado. Esperava um digito depois do '.'Encontrou um: " +(char)lookAhead, lc);
+			}
+			return token = new Token(TipoToken.VALOR_FLOAT, result, lc);
+		}else if(Character.isDigit((char)lookAhead)) { //inteiro
+			String result = ""+(char)lookAhead;
+			lookAhead = bufferR.read();
+			while(Character.isDigit((char)lookAhead)) {
+				result+=(char)lookAhead;
+				lookAhead = bufferR.read();
+			}
+			if((char)lookAhead == '.') { 
+				result+=(char)lookAhead;
+				lookAhead = bufferR.read();
+				if(!Character.isDigit((char)lookAhead)){
+					throw new ScannerException("ERRO. Float mal formado. Esperava um digito depois do '.'Encontrou um: " +(char)lookAhead,lc);
+				}
+				while(Character.isDigit((char)lookAhead)) {
+					result+=(char)lookAhead;
+					lookAhead = bufferR.read();
+				}
+				return token = new Token(TipoToken.VALOR_FLOAT, result, lc);
+			}else {
+				return token = new Token(TipoToken.VALOR_INT, result, lc);
+			}
+			
+			
 		//COMENTARIOS
-		}else if((char) lookAhead == '/') {
+		}else if((char) lookAhead == '/') { //COMENTARIO SIMPLES
 			lookAhead = bufferR.read();
 			if((char) lookAhead == '/') {
 				while((char) lookAhead != '\n') {
 					lookAhead = bufferR.read();
+					lc.incrementeColuna(1);
 				}
 				if((char) lookAhead == '\n') {
-					lc.incrementeLinha(1);
-					lc.setColuna(-1);
 					lookAhead = bufferR.read();
+					lc.setColuna(0);
+					lc.incrementeLinha(1);
 					return this.scan();
 				}
 				if((char) lookAhead == -1) {
 					System.out.println("fim de arquivo");
 					return null;
 				}
+				
+			}else if((char)lookAhead == '*') { //COMENTARIO MULTILINHA
+				char lookAheadPast = (char)lookAhead;
+				lookAhead = bufferR.read();
+				while(!(lookAheadPast == '*') || !((char)lookAhead == '/')) {
+					if(lookAhead == -1) {
+						throw new ScannerException("ERRO. Fim de arquivo dentro de um comentário '.'Encontrou um: " +(char)lookAhead, lc);
+					}
+					else if((char)lookAhead == '\n') {
+						lc.incrementeLinha(1);
+					}
+					lookAheadPast = (char)lookAhead;
+					lookAhead = bufferR.read();
+					lc.incrementeColuna(1);
+				}
+				lookAhead = bufferR.read();
+				return this.scan();
+			
+			
 			}else {
+				lookAhead = bufferR.read();
 				token = new Token(TipoToken.OP_ARITMETICO_DIVISAO, "/", lc);
 				return token;
 			}
 		}
-		//FAZER O ELSE PARA CARACTER INVALIDO
-		if (lookAhead == -1) {
+		else if (lookAhead == -1) {
 			System.out.println("fim de arquivo");
-			return null;
+			return token = new Token(TipoToken.FIM_DE_ARQUIVO, "EOF", lc);
+		}
+		else { // CHARACTER INVALIDO
+			throw new ScannerException("ERRO. Character inválido '.'Encontrou um: " +(char)lookAhead, lc);
 		}
 		return null;
 	}
-	
-	public Boolean isNumber(int ascii) {
-		if(ascii >= 48 && ascii <= 57) {
-			return true;
-		}else {
-			return false;
-		}
-	}
-	
-	//toda vez que incrementar o lookahead incrementar a coluna, menos em comentario ????
-	//Toda vez que achar um \n incrementa a linha e zera a coluna OK
-	//pq o scannerexception nao funciona
-	//rever a parte do character OK
-	//fazer int e float e id e palavraReservada e comentario multi linha 
 }
 
