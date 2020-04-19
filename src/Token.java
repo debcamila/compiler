@@ -25,7 +25,7 @@ public class Token {
 	public String getLexema() {
 		return lexema;
 	}
-	
+
 	@Override
 	public String toString() {
 		return "Linha: " +this.linhaColuna.getLinha() + " Coluna: "+this.linhaColuna.getColuna();

@@ -1,14 +1,1 @@
-
-/*
-alçkjasdlfkjasd
-	as
-df
-		asd
-f
-	asd
-fsadfliuonfof8093u-r0183=-@#%##!
-*/
-2
-int
-a a a
-//
+int a, b , c, d, e, f, g, h;

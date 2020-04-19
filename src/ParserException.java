@@ -1,10 +1,11 @@
 
-public class ScannerException extends Exception{
+public class ParserException extends Exception {
 	LinhaColuna lc;
 	
 	private final String mensagem;
-		
-	public ScannerException (String message, LinhaColuna linhaColuna) {
+	
+	
+	public ParserException (String message, LinhaColuna linhaColuna) {
 		super(message);
 		this.lc = linhaColuna;
 		this.mensagem = message;

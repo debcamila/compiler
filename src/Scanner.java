@@ -14,6 +14,9 @@ public class Scanner {
 		this.lc = new LinhaColuna();
 	}
 
+	public LinhaColuna getLinhaColuna() {
+		return this.lc;
+	}
 	public Token scan() throws IOException, ScannerException {
 		lc.incrementeColuna(1);
 		while (Character.isWhitespace((char) lookAhead)) {
@@ -62,10 +65,10 @@ public class Scanner {
 				lookAhead = bufferR.read();
 				return token;
 			} else {
-				throw new ScannerException("ERRO. Exclamação sozinha. Esperava um '='. Encontrou um: " +(char)lookAhead, lc);
+				throw new ScannerException("ERRO. Exclamacao sozinha. Esperava um =. Encontrou um: " +(char)lookAhead, lc);
 			}
 			
-		//OPERADORES ARITMÉTICOS
+		//OPERADORES ARITMETICOS
 		}else if((char) lookAhead == '-') {
 			lookAhead = bufferR.read();
 			token = new Token(TipoToken.OP_ARITMETICO_MENOS, "-", lc);
@@ -174,7 +177,7 @@ public class Scanner {
 				lookAhead = bufferR.read();
 			}
 			if(result.equals(".")) {
-				throw new ScannerException("ERRO. Float mal formado. Esperava um digito depois do '.'Encontrou um: " +(char)lookAhead, lc);
+				throw new ScannerException("ERRO. Float mal formado. Esperava um digito depois do ponto. Encontrou um: " +(char)lookAhead, lc);
 			}
 			return token = new Token(TipoToken.VALOR_FLOAT, result, lc);
 		}else if(Character.isDigit((char)lookAhead)) { //inteiro
@@ -188,7 +191,7 @@ public class Scanner {
 				result+=(char)lookAhead;
 				lookAhead = bufferR.read();
 				if(!Character.isDigit((char)lookAhead)){
-					throw new ScannerException("ERRO. Float mal formado. Esperava um digito depois do '.'Encontrou um: " +(char)lookAhead,lc);
+					throw new ScannerException("ERRO. Float mal formado. Esperava um digito depois do ponto. Encontrou um: " +(char)lookAhead, lc);
 				}
 				while(Character.isDigit((char)lookAhead)) {
 					result+=(char)lookAhead;
@@ -224,7 +227,7 @@ public class Scanner {
 				lookAhead = bufferR.read();
 				while(!(lookAheadPast == '*') || !((char)lookAhead == '/')) {
 					if(lookAhead == -1) {
-						throw new ScannerException("ERRO. Fim de arquivo dentro de um comentário '.'Encontrou um: " +(char)lookAhead, lc);
+						throw new ScannerException("ERRO. Fim de arquivo dentro de um comentario.Encontrou um: " +(char)lookAhead, lc);
 					}
 					else if((char)lookAhead == '\n') {
 						lc.incrementeLinha(1);
@@ -238,7 +241,7 @@ public class Scanner {
 			
 			
 			}else {
-				lookAhead = bufferR.read();
+				//lookAhead = bufferR.read();
 				token = new Token(TipoToken.OP_ARITMETICO_DIVISAO, "/", lc);
 				return token;
 			}
@@ -248,7 +251,7 @@ public class Scanner {
 			return token = new Token(TipoToken.FIM_DE_ARQUIVO, "EOF", lc);
 		}
 		else { // CHARACTER INVALIDO
-			throw new ScannerException("ERRO. Character inválido '.'Encontrou um: " +(char)lookAhead, lc);
+			throw new ScannerException("ERRO. Character invalido.Encontrou um: " +(char)lookAhead, lc);
 		}
 		return null;
 	}

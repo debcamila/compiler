@@ -2,15 +2,15 @@ import java.io.IOException;
 
 public class Main {
 
-	public static void main(String[] args) throws IOException, ScannerException{
+	public static void main(String[] args) throws IOException, ScannerException, ParserException{
 		
-		Scanner scanner = new Scanner(args[0]);
+		Parser parser = new Parser("data.txt");
 		
-		while(true) {
-			Token t = scanner.scan();
-			if(t.getToken() == TipoToken.FIM_DE_ARQUIVO) {
-				break;
-			}
-		}		
+		if(parser.analisarDeclaracaoVariavel() == true) {
+			System.out.println("iuhu");
+		}else {
+			System.out.println("merda");
+		}
+	
 	}
 }
