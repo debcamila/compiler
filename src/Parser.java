@@ -1,28 +1,13 @@
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Parser {
+	private Boolean elseAve = false;
 	private Scanner scanner;
-
 	private Token token;
-	private int escopo;
-	/*
-	private List<Tabela> tabela;
-	private Boolean declaracao;
-	private int registrador;
-	private int label;
-	*/
 
 	public Parser(String arquivo) throws IOException, ParserException, ScannerException {
 		this.scanner = new Scanner(arquivo);
 		this.token = this.scanner.scan();
-		/*
-		this.tabela = new ArrayList<>();
-		this.escopo = 0;
-		this.registrador = 0;
-		this.label = 0;
-		 */
 	}
 
 	public Boolean analisarFator() throws IOException, ParserException, ScannerException {		
@@ -49,14 +34,12 @@ public class Parser {
 
 	public Boolean analisarTermo() throws IOException, ParserException, ScannerException {
 		if (analisarFator()) {
-			System.out.println("li" +this.token.getLexema());
 			this.token = scanner.scan();
 			while (this.token.getToken().equals(TipoToken.OP_ARITMETICO_MULTIPLICACAO)|| this.token.getToken().equals(TipoToken.OP_ARITMETICO_DIVISAO)) {
 				this.token = scanner.scan();
 				analisarFator();
 				this.token = scanner.scan();
 			}
-			System.out.println("leu" +this.token.getLexema());
 			return true;
 		} else {
 			return false;
@@ -96,11 +79,9 @@ public class Parser {
 	}
 	
 	public Boolean analisarExpRelacional() throws IOException, ParserException, ScannerException{
-		//this.token = scanner.scan();
 		analisarExpressao();
-		this.token = scanner.scan();
 		analisarOpRelacional();
-		//this.token = scanner.scan();
+		this.token = scanner.scan();
 		analisarExpressao();
 		return true;
 	}
@@ -162,7 +143,118 @@ public class Parser {
 		}
 	}
 	
+	public void analisarComandoBasico() throws IOException, ParserException, ScannerException{
+		if(this.token.getToken().equals(TipoToken.IDENTIFICADOR)) {
+			analisarAtribuicao();
+		}else if(this.token.getToken().equals(TipoToken.ESP_ABRE_CHAVES)) {
+			analisarBloco();
+		}
+	}
+	
+	public void analisarComando() throws IOException, ParserException, ScannerException{
+		if(this.token.getToken().equals(TipoToken.IDENTIFICADOR) || this.token.getToken().equals(TipoToken.ESP_ABRE_CHAVES)) {
+			analisarComandoBasico();
+		}else if(this.token.getToken().equals(TipoToken.PALAVRA_RESERVADA_WHILE) || this.token.getToken().equals(TipoToken.PALAVRA_RESERVADA_DO)) {
+			analisarInteracao();
+		}
+		else if(this.token.getToken().equals(TipoToken.PALAVRA_RESERVADA_IF)) {
+			this.token = scanner.scan();
+			if(this.token.getToken().equals(TipoToken.ESP_ABRE_PARENTESES)) {
+				this.token = scanner.scan();
+				analisarExpRelacional();
+				if(this.token.getToken().equals(TipoToken.ESP_FECHA_PARENTESES)) {
+					this.token = scanner.scan();
+					analisarComando();
+					if(this.elseAve == false) {
+						this.token = scanner.scan();
+					}
+					if(this.token.getToken().equals(TipoToken.PALAVRA_RESERVADA_ELSE)) {
+						this.token = scanner.scan();
+						analisarComando();
+						this.elseAve = false;
+					}else {
+						this.elseAve = true;
+					}
+				}else {
+					throw new ParserException("ERRO. Esperava-se um ). Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
+				}
+			}else {
+				throw new ParserException("ERRO. Esperava-se um (. Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
+			}
+		}else {
+			throw new ParserException("ERRO. Esperava-se um IDENTIFICADOR, ), WHILE, DO ou IF. Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
+		}
+	}
+	
+	public void analisarInteracao() throws IOException, ParserException, ScannerException{
+		if(this.token.getToken().equals(TipoToken.PALAVRA_RESERVADA_DO)) { //DO
+			this.token = scanner.scan();
+			analisarComando();
+			this.token = scanner.scan();
+			if(this.token.getToken().equals(TipoToken.PALAVRA_RESERVADA_WHILE)) {
+				this.token = scanner.scan();
+				if(this.token.getToken().equals(TipoToken.ESP_ABRE_PARENTESES)) {
+					this.token = scanner.scan();
+					analisarExpRelacional();
+					if(this.token.getToken().equals(TipoToken.ESP_FECHA_PARENTESES)){
+						this.token = scanner.scan();
+						if(!this.token.getToken().equals(TipoToken.ESP_PONTO_E_VIRGULA)) {
+							throw new ParserException("ERRO. Esperava-se ; . Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
+						}
+					}else {
+						throw new ParserException("ERRO. Esperava-se ). Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
+					}
+				}else {
+					throw new ParserException("ERRO. Esperava-se (. Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
+				}
+			}else {
+				throw new ParserException("ERRO. Esperava-se WHILE. Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
+			}
+		}else if(this.token.getToken().equals(TipoToken.PALAVRA_RESERVADA_WHILE)){ //WHILE
+			this.token = scanner.scan();
+			if(this.token.getToken().equals(TipoToken.ESP_ABRE_PARENTESES)) {
+				this.token = scanner.scan();
+				analisarExpRelacional();
+				if(this.token.getToken().equals(TipoToken.ESP_FECHA_PARENTESES)) {
+					this.token = scanner.scan();
+					analisarComando();
+				}else {
+					throw new ParserException("ERRO. Esperava-se ). Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
+				}
+			}else {
+				throw new ParserException("ERRO. Esperava-se (. Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
+			}
+		}else {
+			throw new ParserException("ERRO. Esperava-se DO ou WHILE. Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
+		}
+	}
 
+	public void analisarBloco() throws IOException, ParserException, ScannerException {
+		if(this.token.getToken().equals(TipoToken.ESP_ABRE_CHAVES)) {
+			this.token = scanner.scan();
+			while(this.token.getToken().equals(TipoToken.PALAVRA_RESERVADA_INT) || this.token.getToken().equals(TipoToken.PALAVRA_RESERVADA_FLOAT) 
+					|| this.token.getToken().equals(TipoToken.PALAVRA_RESERVADA_CHAR)){
+					analisarDeclaracaoVariavel();
+					this.token = scanner.scan();
+			}
+			while(this.token.getToken().equals(TipoToken.IDENTIFICADOR) || this.token.getToken().equals(TipoToken.ESP_ABRE_CHAVES) 
+					|| this.token.getToken().equals(TipoToken.PALAVRA_RESERVADA_DO)
+					|| this.token.getToken().equals(TipoToken.PALAVRA_RESERVADA_WHILE) || this.token.getToken().equals(TipoToken.PALAVRA_RESERVADA_IF)) {
+				analisarComando();
+				if(this.elseAve == false) {
+					this.token = scanner.scan();
+				}else {
+					this.elseAve = false;
+				}
+			}
+			if(!this.token.getToken().equals(TipoToken.ESP_FECHA_CHAVES)) {
+				throw new ParserException("ERRO. Esperava-se }. Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
+			}
+		}else {
+			throw new ParserException("ERRO. Esperava-se {. Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
+		}
+	}
+	
 	public void analisarPrograma() throws IOException, ParserException, ScannerException {
 		if (this.token.getToken().equals(TipoToken.PALAVRA_RESERVADA_INT)) {
 			this.token = scanner.scan();
@@ -172,26 +264,22 @@ public class Parser {
 					this.token = scanner.scan();
 					if (this.token.getToken().equals(TipoToken.ESP_FECHA_PARENTESES)) {
 						this.token = scanner.scan();
-						// analiso o bloco
+						analisarBloco();
+						this.token = scanner.scan();
 						if (!this.token.getToken().equals(TipoToken.FIM_DE_ARQUIVO)) {
-							// Após o fechamento do bloco do programa (main) não pode haver mais tokens, ou
-							// seja, o proximo retorno do scanner deve ser fim_de_arquivo.
+							throw new ParserException("ERRO. Nao pode haver tokens apos o fim do bloco. Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
 						}
 					} else {
-						// deveria ser um )
+						throw new ParserException("ERRO. Esperava-se um ). Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
 					}
 				} else {
-					// deveria ser um (
+					throw new ParserException("ERRO. Esperava-se um (. Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
 				}
 			} else {
-				// deveria ser um main
+				throw new ParserException("ERRO. Esperava-se um MAIN. Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
 			}
 		} else {
-			// programa deve ser iniciado com int
+			throw new ParserException("ERRO. Esperava-se um INT. Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
 		}
-	}
-
-	public void analisarBloco() throws IOException, ScannerException {
-
 	}
 }

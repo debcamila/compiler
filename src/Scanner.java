@@ -54,7 +54,7 @@ public class Scanner {
 				return token;
 			} else {
 				token = new Token(TipoToken.OP_RELACIONAL_MAIOR, ">",lc);
-				lookAhead = bufferR.read();
+				//lookAhead = bufferR.read();
 				return token;
 			}
 		} else if ((char) lookAhead == '!') {
