@@ -1,9 +1,12 @@
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class Parser {
 	private Boolean elseAve = false;
 	private Scanner scanner;
 	private Token token;
+	private AnalisadorSemantico analisador = new AnalisadorSemantico();
+	
 
 	public Parser(String arquivo) throws IOException, ParserException, ScannerException {
 		this.scanner = new Scanner(arquivo);
@@ -75,7 +78,7 @@ public class Parser {
 		}else if(this.token.getToken().equals(TipoToken.OP_RELACIONAL_COMPARACAO)) {
 			return true;
 		}
-		return false;
+		throw new ParserException("ERRO. Esperava-se um operador relacional. Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
 	}
 	
 	public Boolean analisarExpRelacional() throws IOException, ParserException, ScannerException{
@@ -110,18 +113,35 @@ public class Parser {
 	}
 	
 	public Boolean analisarDeclaracaoVariavel() throws IOException, ParserException, ScannerException{
+		TipoToken varTipo = this.token.getToken();
 		if(analisarTipoDado()) {
 			this.token = scanner.scan();
+			ArrayList<String> varName = new ArrayList<>();
 			if(this.token.getToken().equals(TipoToken.IDENTIFICADOR)) {
+				varName.add(this.token.getLexema());
 				this.token = scanner.scan();
 				while(this.token.getToken().equals(TipoToken.ESP_VIRGULA)) {
 					this.token = scanner.scan();
 					if(!this.token.getToken().equals(TipoToken.IDENTIFICADOR)){
 						throw new ParserException("ERRO. Esperava-se um identificador. Encontrou um "+ this.token.getLexema(), this.scanner.getLinhaColuna());
 					}
+					varName.add(this.token.getLexema());
 					this.token = scanner.scan();
 				}
 				if(this.token.getToken().equals(TipoToken.ESP_PONTO_E_VIRGULA)) {
+					varName.forEach((n) -> {
+						try {
+							analisador.adicionarItemTabela(varTipo, n, this.scanner);
+						} catch (ParserException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+							System.exit(0);
+						} catch (ScannerException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+							System.exit(0);
+						}
+					});
 					return true;
 				}else {
 					throw new ParserException("ERRO. Esperava-se ;. Encontrou um "+ this.token.getLexema(), this.scanner.getLinhaColuna());
@@ -265,6 +285,7 @@ public class Parser {
 					if (this.token.getToken().equals(TipoToken.ESP_FECHA_PARENTESES)) {
 						this.token = scanner.scan();
 						analisarBloco();
+						analisador.showAll();
 						this.token = scanner.scan();
 						if (!this.token.getToken().equals(TipoToken.FIM_DE_ARQUIVO)) {
 							throw new ParserException("ERRO. Nao pode haver tokens apos o fim do bloco. Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
@@ -281,5 +302,6 @@ public class Parser {
 		} else {
 			throw new ParserException("ERRO. Esperava-se um INT. Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
 		}
+		
 	}
 }
