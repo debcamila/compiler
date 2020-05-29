@@ -8,55 +8,53 @@ public class AnalisadorSemantico {
 	
 	public void adicionarItemTabela(TipoToken token, String lexema, Scanner scanner) throws ParserException, ScannerException {
 		if(validaEscopo(lexema)) {
-			ItemTabela novoItem = new ItemTabela(token, this.escopo, lexema);
+			TipoToken ultimo = null;
+			if(token.equals(TipoToken.PALAVRA_RESERVADA_CHAR)) {
+				ultimo = TipoToken.VALOR_CHAR;
+			}else if(token.equals(TipoToken.PALAVRA_RESERVADA_INT)) {
+				ultimo = TipoToken.VALOR_INT;
+			}else if(token.equals(TipoToken.PALAVRA_RESERVADA_FLOAT)) {
+				ultimo = TipoToken.VALOR_FLOAT;
+			}
+			ItemTabela novoItem = new ItemTabela(ultimo, this.escopo, lexema);
 			tabela.add(novoItem);
 		}else {
-			throw new ParserException("ERRO. Nao poderia existir variaveis com nomes iguais no mesmo escopo.  ",scanner.getLinhaColuna());
+			throw new ParserException("ERRO. Nao poderia existir variaveis com nomes iguais no mesmo escopo.",scanner.getLinhaColuna());
 		}
 	}
 	
 	public void showAll() {
-		System.out.println("todos");
 		tabela.forEach((e) -> System.out.println(e.toString()));
 	}
 	
 	public boolean validaEscopo(String lexema) throws ParserException, ScannerException{
 		for (ItemTabela item : tabela) {
-			if(item.getLexema().equals(lexema)) {
-				return false;
+			if (item.getEscopo() == escopo) {
+				if(item.getLexema().equals(lexema)) {
+					return false;
+				}
 			}
 		}
 		return true;
 	}
 	
-	public static void removerEscopo(ItemTabela tabela, int escopo) {}
-	
-	public static Token verificaSeDeclarada(ItemTabela tabela, Token token) throws ParserException, ScannerException{}
-	
-	public static void verificaExpRelacional(Token token, int registrador, Token relacional) throws ParserException, ScannerException{}
-	
-	public static boolean isInt(String input) {
-		boolean result = true;
-		try {
-			Integer.parseInt(input);
-		}catch (NumberFormatException e) {
-			result = false;
-		}
-		return result;
+	public void adicionarEscopo() {
+		this.escopo++;
 	}
 	
-	public static boolean isFloat(String input) {
-		boolean result = true;
-		try {
-			Float.parseFloat(input);
-		}catch (NumberFormatException e) {
-			result = false;
-		}
-		return result;
+	public void removerEscopo() {
+		this.tabela.removeIf(i -> {
+			return i.getEscopo() == this.escopo;
+		});
+		this.escopo--;
 	}
 	
+	public TipoToken retornaTipo(String lexema, Scanner scanner) throws ParserException {
+		for(ItemTabela item : tabela) {
+			if(item.getLexema().equals(lexema) && item.getEscopo() <= this.escopo) {
+				return item.getToken();
+			}
+		}
+		throw new ParserException("ERRO. Variavel nao inicializada.",scanner.getLinhaColuna());
+	}	
 }
-
-// { adicionar novo escopo
-// } remover o último escopo
-//testes para o tipo

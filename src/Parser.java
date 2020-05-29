@@ -13,20 +13,20 @@ public class Parser {
 		this.token = this.scanner.scan();
 	}
 
-	public Boolean analisarFator() throws IOException, ParserException, ScannerException {		
+	public TipoToken analisarFator() throws IOException, ParserException, ScannerException {		
 		if (this.token.getToken().equals(TipoToken.IDENTIFICADOR)) {
-			return true;			
+			return analisador.retornaTipo(this.token.getLexema(), this.scanner);			
 		} else if (this.token.getToken().equals(TipoToken.VALOR_FLOAT)) {
-			return true;
+			return TipoToken.VALOR_FLOAT;
 		} else if (this.token.getToken().equals(TipoToken.VALOR_INT)) {
-			return true;
+			return TipoToken.VALOR_INT;
 		} else if (this.token.getToken().equals(TipoToken.VALOR_CHAR)) {
-			return true;
+			return TipoToken.VALOR_CHAR;
 		} else if (this.token.getToken().equals(TipoToken.ESP_ABRE_PARENTESES)) {
 			this.token = this.scanner.scan();
-			analisarExpressao();
+			TipoToken valorFinal = analisarExpressao(); 
 			if(this.token.getToken().equals(TipoToken.ESP_FECHA_PARENTESES)) {
-				return true;
+				return valorFinal;
 			}
 			else {
 				throw new ParserException("ERRO. Esperava-se um ). Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
@@ -35,33 +35,59 @@ public class Parser {
 		throw new ParserException("ERRO. Esperava-se um valor INT, FLOAT ou CHAR. Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
 	}
 
-	public Boolean analisarTermo() throws IOException, ParserException, ScannerException {
-		if (analisarFator()) {
+	public TipoToken analisarTermo() throws IOException, ParserException, ScannerException {
+		TipoToken primeiroFator = analisarFator();
 			this.token = scanner.scan();
 			while (this.token.getToken().equals(TipoToken.OP_ARITMETICO_MULTIPLICACAO)|| this.token.getToken().equals(TipoToken.OP_ARITMETICO_DIVISAO)) {
+				TipoToken operacao = this.token.getToken();
 				this.token = scanner.scan();
-				analisarFator();
+				TipoToken segundoFator = analisarFator();
+				if(primeiroFator.equals(TipoToken.VALOR_FLOAT) && segundoFator.equals(TipoToken.VALOR_INT)) {
+					primeiroFator = TipoToken.VALOR_FLOAT;
+				}else if(primeiroFator.equals(TipoToken.VALOR_INT) && segundoFator.equals(TipoToken.VALOR_FLOAT)) {
+					primeiroFator = TipoToken.VALOR_FLOAT;
+				}else if(primeiroFator.equals(TipoToken.VALOR_INT) && segundoFator.equals(TipoToken.VALOR_INT) && operacao.equals(TipoToken.OP_ARITMETICO_MULTIPLICACAO)) {
+					primeiroFator = TipoToken.VALOR_INT;
+				}else if(primeiroFator.equals(TipoToken.VALOR_INT) && segundoFator.equals(TipoToken.VALOR_INT) && operacao.equals(TipoToken.OP_ARITMETICO_DIVISAO)) {
+					primeiroFator = TipoToken.VALOR_FLOAT;
+				}else if(primeiroFator.equals(TipoToken.VALOR_FLOAT) && segundoFator.equals(TipoToken.VALOR_FLOAT)) {
+					primeiroFator = TipoToken.VALOR_FLOAT;
+				}else if(primeiroFator.equals(TipoToken.VALOR_CHAR) && segundoFator.equals(TipoToken.VALOR_CHAR)) {
+					primeiroFator = TipoToken.VALOR_CHAR;
+				}else {
+					throw new ParserException("ERRO. Nao eh possivel realizar a operacao entre: " +primeiroFator+ " e: " +segundoFator, this.scanner.getLinhaColuna());
+				}
 				this.token = scanner.scan();
 			}
-			return true;
-		} else {
-			return false;
-		} 
+			return primeiroFator; 
 	}
 
-	public Boolean analisarExpressao() throws IOException, ParserException, ScannerException {
-			analisarTermo();
-			analisarExpressaoAritmetrica();
-			return true;		
+	public TipoToken analisarExpressao() throws IOException, ParserException, ScannerException {
+		TipoToken primeiroFator = analisarTermo();
+			primeiroFator = analisarExpressaoAritmetrica(primeiroFator);
+			return primeiroFator; 		
 	}
 	
-	public Boolean analisarExpressaoAritmetrica() throws IOException, ParserException, ScannerException {
+	public TipoToken analisarExpressaoAritmetrica(TipoToken primeiroFator) throws IOException, ParserException, ScannerException {
 		if (this.token.getToken().equals(TipoToken.OP_ARITMETICO_MAIS) || (this.token.getToken().equals(TipoToken.OP_ARITMETICO_MENOS))) {
 			this.token = scanner.scan();
-			analisarTermo();
-			analisarExpressaoAritmetrica();
+			TipoToken segundoFator= analisarTermo();
+			if(primeiroFator.equals(TipoToken.VALOR_FLOAT) && segundoFator.equals(TipoToken.VALOR_INT)) {
+				primeiroFator = TipoToken.VALOR_FLOAT;
+			}else if(primeiroFator.equals(TipoToken.VALOR_INT) && segundoFator.equals(TipoToken.VALOR_FLOAT)) {
+				primeiroFator = TipoToken.VALOR_FLOAT;
+			}else if(primeiroFator.equals(TipoToken.VALOR_INT) && segundoFator.equals(TipoToken.VALOR_INT)) {
+				primeiroFator = TipoToken.VALOR_INT;
+			}else if(primeiroFator.equals(TipoToken.VALOR_FLOAT) && segundoFator.equals(TipoToken.VALOR_FLOAT)) {
+				primeiroFator = TipoToken.VALOR_FLOAT;
+			}else if(primeiroFator.equals(TipoToken.VALOR_CHAR) && segundoFator.equals(TipoToken.VALOR_CHAR)) {
+				primeiroFator = TipoToken.VALOR_CHAR;
+			}else {
+				throw new ParserException("ERRO. Nao eh possivel realizar a operacao entre: " +primeiroFator+ " e: " +segundoFator, this.scanner.getLinhaColuna());
+			}
+			return analisarExpressaoAritmetrica(primeiroFator);
 		}
-		return true;
+		return primeiroFator;
 	}
 
 	public Boolean analisarOpRelacional() throws IOException, ParserException, ScannerException{
@@ -82,24 +108,40 @@ public class Parser {
 	}
 	
 	public Boolean analisarExpRelacional() throws IOException, ParserException, ScannerException{
-		analisarExpressao();
+		TipoToken primeiroFator = analisarExpressao();
 		analisarOpRelacional();
 		this.token = scanner.scan();
-		analisarExpressao();
-		return true;
+		TipoToken segundoFator = analisarExpressao();
+		if(primeiroFator.equals(TipoToken.VALOR_FLOAT) && segundoFator.equals(TipoToken.VALOR_INT)) {
+			return true;
+		}else if(primeiroFator.equals(TipoToken.VALOR_INT) && segundoFator.equals(TipoToken.VALOR_FLOAT)) {
+			return true;
+		}else if(primeiroFator.equals(TipoToken.VALOR_INT) && segundoFator.equals(TipoToken.VALOR_INT)) {
+			return true;
+		}else if(primeiroFator.equals(TipoToken.VALOR_FLOAT) && segundoFator.equals(TipoToken.VALOR_FLOAT)) {
+			return true;
+		}else if(primeiroFator.equals(TipoToken.VALOR_CHAR) && segundoFator.equals(TipoToken.VALOR_CHAR)) {
+			return true;
+		}else {
+			throw new ParserException("ERRO. Nao eh possivel realizar a operacao entre: " +primeiroFator+ " e: " +segundoFator, this.scanner.getLinhaColuna());
+		}
 	}
 	
 	public Boolean analisarAtribuicao() throws IOException, ParserException, ScannerException{
 		if(this.token.getToken().equals(TipoToken.IDENTIFICADOR)) {
+			TipoToken primeiroFator = analisador.retornaTipo(this.token.getLexema(), this.scanner);
 			this.token = scanner.scan();
-			if(this.token.getToken().equals(TipoToken.OP_ARITMETICO_IGUAL)) {
+			if(this.token.getToken().equals(TipoToken.OP_ARITMETICO_IGUAL)) { 
 				this.token = scanner.scan();
-				if(analisarExpressao()) {
+				TipoToken segundoFator = analisarExpressao();
+				if(primeiroFator.equals(segundoFator) || (primeiroFator.equals(TipoToken.VALOR_FLOAT) && segundoFator.equals(TipoToken.VALOR_INT))) {
 					if(this.token.getToken().equals(TipoToken.ESP_PONTO_E_VIRGULA)) {
 						return true;
 					}else {
 						throw new ParserException("ERRO. Esperava-se ;. Encontrou um "+ this.token.getLexema(), this.scanner.getLinhaColuna());
 					}
+				}else {
+					throw new ParserException("ERRO. Tipo invalido. Esperava-se " + primeiroFator + " Encontrou um "+ segundoFator , this.scanner.getLinhaColuna());
 				}
 			}
 			else {
@@ -109,7 +151,6 @@ public class Parser {
 		else {
 			throw new ParserException("ERRO. Esperava-se um identificador. Encontrou um "+ this.token.getLexema(), this.scanner.getLinhaColuna());
 		}
-		return false;
 	}
 	
 	public Boolean analisarDeclaracaoVariavel() throws IOException, ParserException, ScannerException{
@@ -251,6 +292,7 @@ public class Parser {
 
 	public void analisarBloco() throws IOException, ParserException, ScannerException {
 		if(this.token.getToken().equals(TipoToken.ESP_ABRE_CHAVES)) {
+			analisador.adicionarEscopo();
 			this.token = scanner.scan();
 			while(this.token.getToken().equals(TipoToken.PALAVRA_RESERVADA_INT) || this.token.getToken().equals(TipoToken.PALAVRA_RESERVADA_FLOAT) 
 					|| this.token.getToken().equals(TipoToken.PALAVRA_RESERVADA_CHAR)){
@@ -270,6 +312,7 @@ public class Parser {
 			if(!this.token.getToken().equals(TipoToken.ESP_FECHA_CHAVES)) {
 				throw new ParserException("ERRO. Esperava-se }. Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
 			}
+			analisador.removerEscopo();
 		}else {
 			throw new ParserException("ERRO. Esperava-se {. Encontrou um " + this.token.getLexema(), this.scanner.getLinhaColuna());
 		}
