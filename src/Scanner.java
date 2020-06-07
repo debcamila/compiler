@@ -126,7 +126,7 @@ public class Scanner {
 			if(Character.isDigit(c) || Character.isLetter(c)) {
 				lookAhead = bufferR.read();
 				if((char)lookAhead == '\'') {
-					token = new Token(TipoToken.VALOR_CHAR, "" +c, lc);
+					token = new Token(TipoToken.VALOR_CHAR, "'"+c+"'", lc);
 					lookAhead = bufferR.read();
 					return token;
 				}else {
